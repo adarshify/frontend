@@ -19,21 +19,10 @@ interface IJob {
   sourceSite: string;
 }
 
-interface IJobFormData {
-  JobTitle: string;
-  ApplicationURL: string;
-  Company: string;
-  Location: string;
-  Department: string;
-  ContractType: string;
-  ExperienceLevel: string;
-  PostedDate: string;
-  Description: string;
-  // GermanRequired is no longer needed here as it's hardcoded
-}
+
 
 // --- Constants ---
-const API_URL = 'http://localhost:3000/api/jobs'; 
+const API_URL = `${import.meta.env.VITE_API_URL}/api/jobs`;
 
 /**
  * Main Application Component
