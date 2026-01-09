@@ -1,5 +1,5 @@
 // src/components/CompanyCard.tsx
-import React, { useState } from 'react';
+import  { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 interface CompanyStats {
@@ -60,7 +60,7 @@ export default function CompanyCard({ company }: Props) {
       </div>
 
       {/* Locations */}
-      <div className="flex-grow mb-6 w-full">
+      <div className="grow mb-6 w-full">
         {company.cities.length > 0 ? (
            <p className="text-sm text-gray-500 line-clamp-2">
              {company.cities.join(", ")}
