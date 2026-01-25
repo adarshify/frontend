@@ -6,14 +6,22 @@ export interface IJob {
   Location: string;
   ApplicationURL: string;
   PostedDate: string | null;
-  Description: string;
+  Description: string; // The backend scrapes this now
   GermanRequired?: boolean;
   thumbStatus?: 'up' | 'down' | null;
   Department?: string;
   ContractType?: string;
   sourceSite?: string;
-  
-  // ✅ New Fields from Backend
   Status?: 'pending_review' | 'active' | 'rejected';
   ConfidenceScore: number;
+}
+
+export interface ICompany {
+  companyName: string;
+  openRoles: number;
+  cities: string[];
+  domain: string;
+  // Visual helpers
+  logo?: string;
+  industry?: string;
 }

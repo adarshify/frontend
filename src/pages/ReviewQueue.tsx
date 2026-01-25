@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { IJob } from '../types';
 import JobCard from '../components/JobCard';
+import { Lock } from 'lucide-react';
 
 export default function ReviewQueue() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -8,67 +9,57 @@ export default function ReviewQueue() {
   const [jobs, setJobs] = useState<IJob[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD; 
+  const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD;
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === ADMIN_PASSWORD) { 
+    if (password === ADMIN_PASSWORD) {
         setIsAuthenticated(true);
-        fetchReviewQueue();
+        fetchQueue();
     } else {
-        alert("Incorrect Password");
+        alert("Wrong password");
     }
   };
 
-  const fetchReviewQueue = async () => {
+  const fetchQueue = async () => {
     setLoading(true);
     try {
         const res = await fetch('/api/jobs/admin/review');
         const data = await res.json();
-        // The API returns { jobs: [], totalJobs: ... }
         setJobs(data.jobs || []);
-    } catch (e) {
-        console.error(e);
-    } finally {
-        setLoading(false);
-    }
+    } catch (e) { console.error(e); } 
+    finally { setLoading(false); }
   };
 
   const handleDecision = async (id: string, decision: 'accept' | 'reject') => {
-      // 1. Optimistic UI update: Remove from list immediately
       setJobs(prev => prev.filter(j => j._id !== id));
-      
-      // 2. Send to API
-      try {
-          await fetch(`/api/jobs/admin/decision/${id}`, {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ decision })
-          });
-      } catch (error) {
-          console.error("Failed to submit decision", error);
-          alert("Error submitting decision. Refresh page.");
-      }
+      await fetch(`/api/jobs/admin/decision/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ decision })
+      });
   };
 
-  // --- Login Screen (Reused style from RejectedJobs) ---
   if (!isAuthenticated) {
       return (
-          <div className="flex flex-col justify-center items-center h-[60vh]">
-              <div className="bg-white p-8 rounded-xl shadow-2xl border w-96">
-                  <h2 className="text-2xl font-bold text-indigo-600 mb-6 text-center">Admin Login</h2>
-                  <form onSubmit={handleLogin} className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Enter Password</label>
-                        <input 
-                            type="password" 
-                            value={password} 
-                            onChange={e => setPassword(e.target.value)} 
-                            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                        />
+          <div className="flex justify-center items-center min-h-[60vh] bg-slate-50">
+              <div className="bg-white p-8 rounded-xl shadow-lg border border-slate-200 w-full max-w-sm">
+                  <div className="flex justify-center mb-4">
+                      <div className="bg-blue-100 p-3 rounded-full">
+                        <Lock className="w-6 h-6 text-blue-600" />
                       </div>
-                      <button type="submit" className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                          Access Review Queue
+                  </div>
+                  <h2 className="text-xl font-bold text-center text-slate-900 mb-6">Admin Access</h2>
+                  <form onSubmit={handleLogin} className="space-y-4">
+                      <input 
+                        type="password" 
+                        placeholder="Enter admin password"
+                        value={password}
+                        onChange={e => setPassword(e.target.value)}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                      />
+                      <button className="w-full bg-blue-600 text-white py-2 rounded-lg font-bold hover:bg-blue-700">
+                          Login
                       </button>
                   </form>
               </div>
@@ -76,29 +67,24 @@ export default function ReviewQueue() {
       );
   }
 
-  // --- Main Content ---
   return (
-    <div className="p-6 md:p-8">
-        <div className="mb-6 pb-4 border-b border-indigo-100 flex justify-between items-center">
+    <div className="max-w-4xl mx-auto px-6 py-12">
+        <div className="flex justify-between items-center mb-8">
             <div>
-                <h2 className="text-2xl font-semibold text-indigo-800">📋 Job Review Queue</h2>
-                <p className="text-sm text-gray-500">{jobs.length} jobs waiting for your approval.</p>
+                <h1 className="text-2xl font-bold text-slate-900">Review Queue</h1>
+                <p className="text-slate-500">{jobs.length} jobs pending classification.</p>
             </div>
-            <button 
-                onClick={fetchReviewQueue}
-                className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
-            >
-                Refresh List ⟳
+            <button onClick={fetchQueue} className="text-blue-600 font-medium hover:underline">
+                Refresh
             </button>
         </div>
 
         {loading ? (
-            <div className="text-center py-12 text-gray-500">Loading queue...</div>
+            <div className="text-center py-12">Loading...</div>
         ) : jobs.length === 0 ? (
-            <div className="text-center py-20 bg-green-50 rounded-xl border border-green-200">
-                <div className="text-4xl mb-4">🎉</div>
-                <h3 className="text-xl font-bold text-green-800">All caught up!</h3>
-                <p className="text-green-600">No pending jobs to review right now.</p>
+            <div className="bg-green-50 border border-green-200 rounded-lg p-12 text-center">
+                <h3 className="text-lg font-bold text-green-800 mb-2">Queue Empty</h3>
+                <p className="text-green-700">Good job! No pending jobs.</p>
             </div>
         ) : (
             <div className="space-y-4">

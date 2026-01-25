@@ -1,28 +1,25 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
-import Dashboard from './pages/Dashboard'; 
-import CompanyDirectory from './pages/CompanyDirectory'; 
+import Home from './pages/Home';
+import CompanyDirectory from './pages/CompanyDirectory';
 import AddJob from './pages/AddJob';
+import ReviewQueue from './pages/ReviewQueue';
 import RejectedJobs from './pages/RejectedJobs';
-import ReviewQueue from './pages/ReviewQueue'; // ✅ Import
+import AdminCompanies from './pages/AdminCompanies';
+import Dashboard from './pages/Dashboard';
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Layout />}>
-          {/* Main Entry is now Directory */}
-          <Route index element={<CompanyDirectory />} /> 
-          
-          {/* Detailed Job List */}
-          <Route path="jobs" element={<Dashboard />} />
-          
+          <Route index element={<Home />} />
+          <Route path="directory" element={<CompanyDirectory />} />
           <Route path="add" element={<AddJob />} />
-          
-          {/* ✅ NEW: Review Route */}
           <Route path="review" element={<ReviewQueue />} />
-
           <Route path="rejected" element={<RejectedJobs />} />
+          <Route path="admin/companies" element={<AdminCompanies />} />
+          <Route path="jobs" element={<Dashboard />} />
         </Route>
       </Routes>
     </BrowserRouter>
