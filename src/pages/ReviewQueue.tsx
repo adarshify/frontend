@@ -1,93 +1,80 @@
-import React, { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { IJob } from '../types';
 import JobCard from '../components/JobCard';
-import { Lock } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 
 export default function ReviewQueue() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [password, setPassword] = useState('');
   const [jobs, setJobs] = useState<IJob[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD;
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password === ADMIN_PASSWORD) {
-        setIsAuthenticated(true);
-        fetchQueue();
-    } else {
-        alert("Wrong password");
-    }
-  };
+  // Initial Fetch on Component Load
+  useEffect(() => {
+    fetchQueue();
+  }, []);
 
   const fetchQueue = async () => {
     setLoading(true);
     try {
-        const res = await fetch('/api/jobs/admin/review');
+        // This request sends your token automatically via the browser/auth context logic
+        // if you set up an interceptor, OR you must explicitly pass headers here.
+        // For simplicity, let's assume global fetch wrapper or add headers manually:
+        const token = localStorage.getItem('token');
+        const res = await fetch('/api/jobs/admin/review', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
         const data = await res.json();
         setJobs(data.jobs || []);
-    } catch (e) { console.error(e); } 
-    finally { setLoading(false); }
+    } catch (e) { 
+        console.error("Failed to load queue", e); 
+    } finally { 
+        setLoading(false); 
+    }
   };
 
   const handleDecision = async (id: string, decision: 'accept' | 'reject') => {
+      // Optimistic UI update: Remove job immediately
       setJobs(prev => prev.filter(j => j._id !== id));
+      
+      const token = localStorage.getItem('token');
       await fetch(`/api/jobs/admin/decision/${id}`, {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+          },
           body: JSON.stringify({ decision })
       });
   };
 
-  if (!isAuthenticated) {
-      return (
-          <div className="flex justify-center items-center min-h-[60vh] bg-slate-50">
-              <div className="bg-white p-8 rounded-xl shadow-lg border border-slate-200 w-full max-w-sm">
-                  <div className="flex justify-center mb-4">
-                      <div className="bg-blue-100 p-3 rounded-full">
-                        <Lock className="w-6 h-6 text-blue-600" />
-                      </div>
-                  </div>
-                  <h2 className="text-xl font-bold text-center text-slate-900 mb-6">Admin Access</h2>
-                  <form onSubmit={handleLogin} className="space-y-4">
-                      <input 
-                        type="password" 
-                        placeholder="Enter admin password"
-                        value={password}
-                        onChange={e => setPassword(e.target.value)}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                      />
-                      <button className="w-full bg-blue-600 text-white py-2 rounded-lg font-bold hover:bg-blue-700">
-                          Login
-                      </button>
-                  </form>
-              </div>
-          </div>
-      );
-  }
-
   return (
     <div className="max-w-4xl mx-auto px-6 py-12">
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex justify-between items-center mb-8 border-b border-slate-200 pb-4">
             <div>
-                <h1 className="text-2xl font-bold text-slate-900">Review Queue</h1>
-                <p className="text-slate-500">{jobs.length} jobs pending classification.</p>
+                <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+                   <ShieldCheck className="text-blue-600" /> Review Queue
+                </h1>
+                <p className="text-slate-500 mt-1">
+                    {jobs.length} jobs pending AI verification.
+                </p>
             </div>
-            <button onClick={fetchQueue} className="text-blue-600 font-medium hover:underline">
-                Refresh
+            <button 
+                onClick={fetchQueue} 
+                className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
+            >
+                Refresh List
             </button>
         </div>
 
         {loading ? (
-            <div className="text-center py-12">Loading...</div>
+            <div className="text-center py-20 text-slate-400">Loading pending jobs...</div>
         ) : jobs.length === 0 ? (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-12 text-center">
-                <h3 className="text-lg font-bold text-green-800 mb-2">Queue Empty</h3>
-                <p className="text-green-700">Good job! No pending jobs.</p>
+            <div className="bg-green-50 border border-green-200 rounded-xl p-12 text-center">
+                <div className="text-4xl mb-4">🎉</div>
+                <h3 className="text-lg font-bold text-green-800 mb-2">All Caught Up!</h3>
+                <p className="text-green-700">No pending jobs in the queue.</p>
             </div>
         ) : (
-            <div className="space-y-4">
+            <div className="space-y-6">
                 {jobs.map(job => (
                     <JobCard 
                         key={job._id} 

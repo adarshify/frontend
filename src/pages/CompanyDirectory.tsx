@@ -1,143 +1,85 @@
-// src/pages/CompanyDirectory.tsx
-import  { useEffect, useState } from 'react';
-import CompanyCard from '../components/CompanyCard';
+import { useEffect, useState } from 'react';
+import { Search } from 'lucide-react';
+import DirectoryCard from '../components/DirectoryCard'; // ✅ Use new card
 
 interface CompanyStats {
   companyName: string;
   openRoles: number;
   cities: string[];
   domain: string;
+  source: 'scraped' | 'manual';
 }
 
 export default function CompanyDirectory() {
   const [companies, setCompanies] = useState<CompanyStats[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
-  
-  // Filters
-  const [selectedCity, setSelectedCity] = useState('All Cities');
-  
-  // ✅ SAFETY CHECK: Ensure companies is an array before using flatMap to generate city list
-  const allCities = Array.isArray(companies) 
-    ? Array.from(new Set(companies.flatMap(c => c.cities))).sort() 
-    : [];
 
   useEffect(() => {
     fetch('/api/jobs/directory')
       .then(res => {
-        if (!res.ok) {
-            throw new Error(`HTTP error! Status: ${res.status}`);
-        }
-        return res.json();
+          if (!res.ok) throw new Error('Failed');
+          return res.json();
       })
       .then(data => {
-        // ✅ Validate data type is actually an Array
         if (Array.isArray(data)) {
-            setCompanies(data);
-        } else {
-            console.error("API did not return an array:", data);
-            setCompanies([]); 
+            // Sort simply by name A-Z
+            const sorted = data.sort((a, b) => a.companyName.localeCompare(b.companyName));
+            setCompanies(sorted);
         }
         setLoading(false);
       })
-      .catch(err => {
-          console.error("Failed to load directory:", err);
-          setCompanies([]); // Fallback to empty state
+      .catch(e => {
+          console.error(e);
           setLoading(false);
       });
   }, []);
 
-  // Filter Logic
-  const filteredCompanies = companies.filter(company => {
-    if (selectedCity !== 'All Cities') {
-      if (!company.cities.includes(selectedCity)) return false;
-    }
-    return true;
-  });
-
-  if (loading) return (
-    <div className="flex justify-center items-center min-h-screen text-gray-500 font-medium">
-        Loading Directory...
-    </div>
+  const filteredCompanies = companies.filter(c => 
+    c.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.cities.some(city => city.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   return (
-    <div className="min-h-screen bg-[#f3f4f6]">
-      {/* Header Section */}
-      <div className="text-center py-12 px-4">
-        <h1 className="text-4xl font-bold text-[#1a1a2e] mb-4">Company Directory</h1>
-        <p className="text-gray-600 max-w-2xl mx-auto text-lg">
-          Explore companies with English-friendly roles in Germany. 
-          Select a company to view current openings.
-        </p>
-        <p className="text-xs text-gray-400 mt-2">
-            Job links redirect to official company career pages.
-        </p>
-      </div>
+    <div className="min-h-screen bg-slate-50">
+      {/* Header */}
+      <div className="bg-white border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
+            <h1 className="text-4xl font-extrabold text-slate-900 mb-4">
+                Company Directory
+            </h1>
+            <p className="text-lg text-slate-600 max-w-2xl mx-auto mb-8">
+                A comprehensive list of companies in Germany that offer English-speaking roles.
+            </p>
 
-      {/* Filter Bar */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex flex-wrap gap-4 items-center justify-center md:justify-start">
-          
-          <div className="flex items-center gap-2">
-            <span className="text-gray-600 font-medium">City:</span>
-            <select 
-              value={selectedCity} 
-              onChange={(e) => setSelectedCity(e.target.value)}
-              className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 min-w-[150px]"
-            >
-              <option value="All Cities">All Cities</option>
-              {allCities.map(city => (
-                <option key={city} value={city}>{city}</option>
-              ))}
-            </select>
-          </div>
-
-          <button 
-            onClick={() => setSelectedCity('All Cities')}
-            className="text-sm text-gray-500 hover:text-blue-600 underline ml-2"
-          >
-            Reset Filters
-          </button>
-        </div>
-
-        <div className="mt-4 text-center md:text-left text-gray-500">
-            Showing {filteredCompanies.length} companies
+            <div className="max-w-md mx-auto relative">
+                <Search className="absolute left-4 top-3.5 w-5 h-5 text-slate-400" />
+                <input 
+                    type="text" 
+                    placeholder="Search companies..." 
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-12 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 shadow-sm outline-none"
+                />
+            </div>
         </div>
       </div>
 
-      {/* Grid Layout */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-        {filteredCompanies.length === 0 ? (
-            // Empty State
+      {/* Directory Grid */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {loading ? (
+            <div className="text-center text-slate-400 py-20">Loading directory...</div>
+        ) : filteredCompanies.length === 0 ? (
             <div className="text-center py-20">
-                <div className="text-6xl mb-4">📭</div>
-                <h3 className="text-xl font-bold text-gray-700">No Companies Found</h3>
-                <p className="text-gray-500 mt-2">
-                    {companies.length === 0 
-                        ? "The database appears to be empty. Try running the scraper." 
-                        : "No companies match your selected filters."}
-                </p>
+                <h3 className="text-lg font-bold text-slate-700">No companies found</h3>
             </div>
         ) : (
-            // Company Grid
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {filteredCompanies.map((company) => (
-                <CompanyCard key={company.companyName} company={company} />
-              ))}
+                {filteredCompanies.map((company) => (
+                    <DirectoryCard key={company.companyName} company={company} />
+                ))}
             </div>
         )}
-      </div>
-
-      {/* Footer Recommendation */}
-      <div className="max-w-3xl mx-auto px-4 pb-12">
-        <div className="bg-gray-100 rounded-lg p-6 flex justify-between items-center border border-gray-200">
-            <div className="text-sm text-gray-600">
-                Company missing? <span className="text-gray-400">Recommend a company we should know about.</span>
-            </div>
-            <button className="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium py-2 px-4 rounded shadow-sm">
-                Recommend a company
-            </button>
-        </div>
       </div>
     </div>
   );

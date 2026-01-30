@@ -1,5 +1,5 @@
-import React, { useState, } from 'react';
-import { Trash2, Plus, MapPin } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Trash2, Plus, MapPin, Building2 } from 'lucide-react';
 
 interface Company {
   _id: string;
@@ -11,23 +11,13 @@ interface Company {
 }
 
 export default function AdminCompanies() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [password, setPassword] = useState('');
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(false);
   const [newCompany, setNewCompany] = useState({ name: '', domain: '', cities: '' });
 
-  const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD;
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password === ADMIN_PASSWORD) {
-        setIsAuthenticated(true);
-        fetchCompanies();
-    } else {
-        alert("Wrong password");
-    }
-  };
+  useEffect(() => {
+    fetchCompanies();
+  }, []);
 
   const fetchCompanies = async () => {
     setLoading(true);
@@ -41,76 +31,74 @@ export default function AdminCompanies() {
 
   const handleAddCompany = async (e: React.FormEvent) => {
       e.preventDefault();
+      const token = localStorage.getItem('token');
       try {
           const res = await fetch('/api/jobs/companies', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: { 
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}` 
+              },
               body: JSON.stringify(newCompany)
           });
           if (res.ok) {
-              alert("Company Added!");
               setNewCompany({ name: '', domain: '', cities: '' });
               fetchCompanies();
           } else {
-              const err = await res.json();
-              alert("Error: " + err.error);
+              alert("Failed to add company.");
           }
       } catch (e) { alert("Network Error"); }
   };
 
   const handleDelete = async (company: Company) => {
-      if(!window.confirm(`Delete ${company.companyName}? This deletes ALL associated jobs.`)) return;
-
+      if(!window.confirm(`Delete ${company.companyName}?`)) return;
+      const token = localStorage.getItem('token');
+      
       try {
-          let url;
-          let method = 'DELETE';
-
+          // Logic to delete manual companies specifically
           if (company.source === 'manual') {
-              url = `/api/jobs/companies/${company._id}`;
+              await fetch(`/api/jobs/companies/${company._id}`, { 
+                  method: 'DELETE',
+                  headers: { 'Authorization': `Bearer ${token}` }
+              });
+              setCompanies(prev => prev.filter(c => c._id !== company._id));
           } else {
-              url = `/api/jobs/company?name=${encodeURIComponent(company.companyName)}`;
-          }
-
-          const res = await fetch(url, { method });
-          if(res.ok) {
-              setCompanies(prev => prev.filter(c => c.companyName !== company.companyName));
-          } else {
-              alert("Error deleting.");
+              alert("You can only delete manually added companies from here. Scraped companies are managed by the database.");
           }
       } catch (err) { alert("Network Error"); }
   };
 
-  if (!isAuthenticated) {
-      return (
-          <div className="flex justify-center items-center min-h-[50vh]">
-              <form onSubmit={handleLogin} className="bg-white p-8 rounded shadow-lg border w-80">
-                  <h2 className="text-xl font-bold mb-4">Admin Access</h2>
-                  <input type="password" value={password} onChange={e=>setPassword(e.target.value)} className="w-full border p-2 rounded mb-4" placeholder="Password"/>
-                  <button className="w-full bg-slate-900 text-white py-2 rounded">Login</button>
-              </form>
-          </div>
-      );
-  }
-
   return (
     <div className="max-w-5xl mx-auto px-6 py-12">
-        <h1 className="text-3xl font-bold text-slate-900 mb-8">Manage Companies</h1>
+        <div className="flex justify-between items-center mb-8">
+            <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
+                <Building2 className="w-8 h-8 text-indigo-600" /> Manage Directory
+            </h1>
+        </div>
 
-        {/* --- ADD COMPANY FORM --- */}
+        {/* Add Company Form */}
         <div className="bg-white p-6 rounded-xl border border-indigo-100 shadow-sm mb-10">
-            <h2 className="text-lg font-bold text-indigo-900 mb-4 flex items-center gap-2">
-                <Plus className="w-5 h-5" /> Add Manual Company
+            <h2 className="text-sm font-bold text-indigo-900 uppercase tracking-wide mb-4 flex items-center gap-2">
+                <Plus className="w-4 h-4" /> Add Manual Entry
             </h2>
-            <form onSubmit={handleAddCompany} className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <input required placeholder="Name (e.g. SoundCloud)" value={newCompany.name} onChange={e => setNewCompany({...newCompany, name: e.target.value})} className="border p-2 rounded w-full" />
-                <input required placeholder="Domain (e.g. soundcloud.com)" value={newCompany.domain} onChange={e => setNewCompany({...newCompany, domain: e.target.value})} className="border p-2 rounded w-full" />
-                <input placeholder="City (e.g. Berlin)" value={newCompany.cities} onChange={e => setNewCompany({...newCompany, cities: e.target.value})} className="border p-2 rounded w-full" />
-                <button className="bg-indigo-600 text-white font-bold py-2 rounded hover:bg-indigo-700 w-full">Add</button>
+            <form onSubmit={handleAddCompany} className="grid grid-cols-1 md:grid-cols-7 gap-4">
+                <div className="md:col-span-2">
+                    <input required placeholder="Company Name" value={newCompany.name} onChange={e => setNewCompany({...newCompany, name: e.target.value})} className="border border-slate-300 p-2.5 rounded-lg w-full text-sm focus:ring-2 focus:ring-indigo-500 outline-none" />
+                </div>
+                <div className="md:col-span-2">
+                    <input required placeholder="Domain (e.g. google.com)" value={newCompany.domain} onChange={e => setNewCompany({...newCompany, domain: e.target.value})} className="border border-slate-300 p-2.5 rounded-lg w-full text-sm focus:ring-2 focus:ring-indigo-500 outline-none" />
+                </div>
+                <div className="md:col-span-2">
+                    <input placeholder="City (e.g. Berlin)" value={newCompany.cities} onChange={e => setNewCompany({...newCompany, cities: e.target.value})} className="border border-slate-300 p-2.5 rounded-lg w-full text-sm focus:ring-2 focus:ring-indigo-500 outline-none" />
+                </div>
+                <div className="md:col-span-1">
+                    <button className="bg-indigo-600 text-white font-bold py-2.5 rounded-lg hover:bg-indigo-700 w-full text-sm shadow-md transition-all">Add</button>
+                </div>
             </form>
         </div>
 
-        {/* --- COMPANY LIST --- */}
-        {loading ? <div>Loading...</div> : (
+        {/* List */}
+        {loading ? <div className="text-slate-400">Loading directory...</div> : (
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 <table className="w-full text-left text-sm">
                     <thead className="bg-slate-50 border-b border-slate-200">
@@ -123,22 +111,35 @@ export default function AdminCompanies() {
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                         {companies.map((company) => (
-                            <tr key={company.companyName} className="hover:bg-slate-50">
+                            <tr key={company._id || company.companyName} className="hover:bg-slate-50 transition-colors">
                                 <td className="px-6 py-4 font-medium text-slate-900 flex items-center gap-3">
-                                    <img src={`https://logo.clearbit.com/${company.domain || ''}`} onError={(e) => (e.target as HTMLImageElement).src = 'https://via.placeholder.com/20?text=' + company.companyName[0]} className="w-8 h-8 object-contain rounded" />
+                                    <img 
+                                        src={`https://logo.clearbit.com/${company.domain}`} 
+                                        onError={(e) => (e.target as HTMLImageElement).src = 'https://via.placeholder.com/20'} 
+                                        className="w-6 h-6 object-contain opacity-80" 
+                                    />
                                     {company.companyName}
                                 </td>
                                 <td className="px-6 py-4">
-                                    {company.source === 'scraped' ? <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-bold">Auto-Scraped</span> : <span className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full text-xs font-bold">Manual Entry</span>}
+                                    {company.source === 'scraped' 
+                                        ? <span className="bg-green-100 text-green-700 px-2.5 py-1 rounded-full text-xs font-bold border border-green-200">Auto</span> 
+                                        : <span className="bg-yellow-100 text-yellow-700 px-2.5 py-1 rounded-full text-xs font-bold border border-yellow-200">Manual</span>
+                                    }
                                 </td>
                                 <td className="px-6 py-4 text-slate-500">
-                                    <span className={company.openRoles > 0 ? "text-indigo-600 font-bold" : "text-slate-400"}>{company.openRoles} Jobs</span>
-                                    <span className="ml-2 text-xs text-slate-400"><MapPin className="w-3 h-3 inline" /> {company.cities.join(", ")}</span>
+                                    <div className="flex items-center gap-4">
+                                        <span className={company.openRoles > 0 ? "text-indigo-600 font-bold" : "text-slate-400"}>{company.openRoles} Jobs</span>
+                                        <span className="text-xs text-slate-400 flex items-center gap-1">
+                                            <MapPin className="w-3 h-3" /> {company.cities.slice(0, 2).join(", ")}
+                                        </span>
+                                    </div>
                                 </td>
                                 <td className="px-6 py-4 text-right">
-                                    <button onClick={() => handleDelete(company)} className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded transition-colors" title="Delete">
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
+                                    {company.source === 'manual' && (
+                                        <button onClick={() => handleDelete(company)} className="text-slate-400 hover:text-red-600 p-2 hover:bg-red-50 rounded-lg transition-all" title="Delete">
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    )}
                                 </td>
                             </tr>
                         ))}
