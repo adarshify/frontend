@@ -48,9 +48,11 @@ export default function CompanyDirectory() {
             <h1 className="text-4xl font-extrabold text-slate-900 mb-4">
                 Company Directory
             </h1>
-            <p className="text-lg text-slate-600 max-w-2xl mx-auto mb-8">
-                A comprehensive list of companies in Germany that offer English-speaking roles.
-            </p>
+            <h3 className="text-lg text-slate-600 max-w-2xl mx-auto mb-8">
+                Explore companies  with English-friendly roles in Germany. <br/>Select a company to view current openings. <br/>Jobs links redirect to official company career pages.
+            </h3>
+            
+            
 
             <div className="max-w-md mx-auto relative">
                 <Search className="absolute left-4 top-3.5 w-5 h-5 text-slate-400" />

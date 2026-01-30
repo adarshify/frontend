@@ -52,7 +52,7 @@ export default function Layout() {
                     <Link to="/directory" className={location.pathname === '/directory' ? activeClass : inactiveClass}>
                         Companies
                     </Link>
-                    <Link to="/" className={location.pathname === '/' ? activeClass : inactiveClass}>
+                    <Link to="/jobs" className={location.pathname === '/jobs' ? activeClass : inactiveClass}>
                         Jobs
                     </Link>
                 </div>
