@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, ExternalLink, ArrowRight, Building2 } from 'lucide-react';
+import { MapPin, ExternalLink, ArrowRight } from 'lucide-react';
 
 interface CompanyStats {
   companyName: string;
@@ -37,7 +37,7 @@ export default function CompanyCard({ company }: Props) {
       
       {/* Top Section: Logo & Name */}
       <div className="flex items-start justify-between mb-4">
-        <div className="h-12 w-12 flex-shrink-0 bg-slate-50 rounded-lg border border-slate-100 flex items-center justify-center p-2">
+        <div className="h-12 w-12 shrink-0 bg-slate-50 rounded-lg border border-slate-100 flex items-center justify-center p-2">
             {!imageError ? (
             <img 
                 src={logoUrl} 

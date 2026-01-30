@@ -21,7 +21,7 @@ export interface ICompany {
   openRoles: number;
   cities: string[];
   domain: string;
-  // Visual helpers
+  source: 'scraped' | 'manual';
   logo?: string;
   industry?: string;
 }
